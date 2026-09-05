@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20&height=180&section=header&text=PrescriptoPlus&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=45" width="100%"/>
+<img src="./assets/prescriptoplus-banner.png" alt="PrescriptoPlus" width="100%"/>
 
 <img src="./assets/prescripto-logo.png" alt="PrescriptoPlus Logo" width="90"/>
 
