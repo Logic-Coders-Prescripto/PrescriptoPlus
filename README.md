@@ -30,7 +30,7 @@
 - [Project Structure](#-project-structure)
 - [Safety & Privacy](#-safety--privacy)
 - [Future Scope](#-future-scope)
-- [Team](#-team)
+- [Team](#-team--logiccoders)
 
 ---
 
