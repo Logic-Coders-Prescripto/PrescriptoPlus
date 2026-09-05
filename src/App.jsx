@@ -19,8 +19,12 @@ import {
 } from 'lucide-react';
 import { SRINIVAS_PRESCRIPTION } from './data/samplePrescriptions';
 import { parseCustomPrescription } from './utils/mockOcrEngine';
+import { FinalLoginPage } from './components/FinalLoginPage';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [selectedLang, setSelectedLang] = useState('en');
+
   const [selectedImage, setSelectedImage] = useState(SRINIVAS_PRESCRIPTION.imagePreview);
   const [fileName, setFileName] = useState('Dr_Y_Nagendar_Rao_Prescription.jpg');
   const [isScanning, setIsScanning] = useState(false);
@@ -109,6 +113,17 @@ Emergency: ${activePrescription.doctor?.emergencyHospital}`;
   const handlePrint = () => {
     window.print();
   };
+
+  // Show the login page until the user authenticates
+  if (!currentUser) {
+    return (
+      <FinalLoginPage
+        onLogin={(userData) => setCurrentUser(userData)}
+        selectedLang={selectedLang}
+        onSelectLang={setSelectedLang}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased flex flex-col">
