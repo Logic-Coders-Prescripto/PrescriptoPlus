@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20&height=180&section=header&text=Prescripto&fontSize=55&fontColor=ffffff&animation=fadeIn&fontAlignY=45" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20&height=180&section=header&text=PrescriptoPlus&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=45" width="100%"/>
 
-<img src="./assets/prescripto-logo.png" alt="Prescripto Logo" width="90"/>
+<img src="./assets/prescripto-logo.png" alt="PrescriptoPlus Logo" width="90"/>
 
 <br/>
 
@@ -36,9 +36,9 @@
 
 ## 🩺 About the Project
 
-**Prescripto** is an AI-assisted, doctor-verified prescription companion built at **IEEE Hack Synapse 2026** (organized by IEEE IAS & IEEE RAS, MITS-DU Gwalior, in collaboration with HackIndia).
+**PrescriptoPlus** is an AI-assisted, doctor-verified prescription companion built at **IEEE Hack Synapse 2026** (organized by IEEE IAS & IEEE RAS, MITS-DU Gwalior, in collaboration with HackIndia).
 
-A prescription can fail at four points — **reading, understanding, affordability, and follow-through**. Prescripto closes that gap with one safety-gated workflow: scan the slip, let AI extract the text, have a doctor verify and digitally sign it, and let the patient hear their routine explained in Hindi/English — with savings and reminders built in.
+A prescription can fail at four points — **reading, understanding, affordability, and follow-through**. PrescriptoPlus closes that gap with one safety-gated workflow: scan the slip, let AI extract the text, have a doctor verify and digitally sign it, and let the patient hear their routine explained in Hindi/English — with savings and reminders built in.
 
 ## ❗ The Problem
 
@@ -136,7 +136,7 @@ npm run preview
 ## 📁 Project Structure
 
 ```
-Prescripto/
+PrescriptoPlus/
 ├── src/
 │   ├── components/       # Reusable UI components
 │   ├── pages/            # Route-level pages (OCR, Verification, Savings, etc.)
