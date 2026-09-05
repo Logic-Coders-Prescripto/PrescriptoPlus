@@ -181,12 +181,12 @@ Prescripto/
 
 ## 👥 Team — Logiccoders
 
-| Role | Name |
-|---|---|
-| Team Leader | Dev Soni |
-| Member | Prajan |
-| Member | Abhay |
-| Member | Navam |
+| Role | Name | GitHub |
+|---|---|---|
+| Team Leader | Dev Soni | [D3VSONI](https://github.com/D3VSONI) |
+| Member | Prajan | [prajanexists-lang](https://github.com/prajanexists-lang) |
+| Member | Abhay | [abhi-og](https://github.com/abhi-og) |
+| Member | Navam | [ExponentL](https://github.com/ExponentL) |
 
 Built for **IEEE Hack Synapse 2026** — a 36-hour offline hackathon organized by IEEE IAS & IEEE RAS, MITS-DU Gwalior, in collaboration with HackIndia.
 
@@ -197,7 +197,7 @@ Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more informati
 ---
 
 <div align="center">
-Made with ❤️ by Team Logic Coders
+Made with ❤️ by Team Logiccoders
 </div>
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20&height=120&section=footer"/>
