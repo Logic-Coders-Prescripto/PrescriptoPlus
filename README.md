@@ -14,8 +14,6 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-38BDF8?logo=tailwindcss&logoColor=white)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 
-[![Open Live Demo](https://img.shields.io/badge/Open%20Live%20Demo-2dd4bf?style=for-the-badge&logo=vercel&logoColor=black)](https://prescripto.dpdns.org/)
-
 </div>
 
 ---
