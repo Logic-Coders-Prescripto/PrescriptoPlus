@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   HeartPulse, 
   ShieldCheck, 
-  Stethoscope, 
   Fingerprint, 
   ArrowRight, 
   Sparkles, 
@@ -12,7 +11,9 @@ import {
   CheckCircle2,
   KeyRound,
   RotateCcw,
-  Volume2
+  Volume2,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 // Cryptographic ABDM Standard 14-Digit Non-Predictable Health ID Generator (Name + Phone + Salt)
@@ -27,7 +28,7 @@ export function generateSecureAbhaId(name = '', phone = '') {
   }
   h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
   h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  
+
   const num1 = String(Math.abs(h1 % 9000) + 1000);
   const num2 = String(Math.abs(h2 % 9000) + 1000);
   const num3 = String(Math.abs((h1 ^ h2) % 9000) + 1000);
@@ -36,12 +37,10 @@ export function generateSecureAbhaId(name = '', phone = '') {
   return `91-${num1}-${num2}-${num3}`;
 }
 
-export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelectLang }) {
+export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelectLang, isDarkMode = true, onToggleTheme }) {
   const handleSuccess = onLogin || onLoginSuccess;
   const isHindi = selectedLang === 'hi';
 
-  // Role: 'patient' | 'doctor'
-  const [activeRole, setActiveRole] = useState('patient');
   // Patient Auth Mode: 'signup' | 'signin'
   const [authMode, setAuthMode] = useState('signup');
   // Flow Step: 'form' | 'otp'
@@ -65,13 +64,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
   const [errorMessage, setErrorMessage] = useState('');
   const [isCallingPhone, setIsCallingPhone] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-
-  // Doctor Fields
-  const [doctorName, setDoctorName] = useState('');
-  const [doctorPhone, setDoctorPhone] = useState('');
-  const [doctorSpecialty, setDoctorSpecialty] = useState('');
-  const [doctorRegNo, setDoctorRegNo] = useState('');
-  const [doctorHospital, setDoctorHospital] = useState('');
+  const [activeCallingPhone, setActiveCallingPhone] = useState('');
 
   // OTP Timer Countdown
   useEffect(() => {
@@ -83,6 +76,11 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
     }
     return () => clearInterval(interval);
   }, [step, timer]);
+
+  // Clear any existing error messages whenever switching between Sign Up and Sign In
+  useEffect(() => {
+    setErrorMessage('');
+  }, [authMode]);
 
   // Handle OTP Input box navigation
   const handleOtpChange = (index, value) => {
@@ -106,26 +104,47 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
   };
 
   // Helper to trigger automated voice call via Backend API
-  const dispatchVoiceOtpCall = async (phone, name = 'User') => {
+  const dispatchVoiceOtpCall = async (phoneOrIdentifier, name = 'User', mode = authMode) => {
     setIsCallingPhone(true);
     setErrorMessage('');
 
     try {
+      const targetMode = mode || authMode;
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, name })
+        body: JSON.stringify({ 
+          phone: phoneOrIdentifier, 
+          identifier: phoneOrIdentifier, 
+          name,
+          mode: targetMode
+        })
       });
       const data = await response.json();
+      setIsCallingPhone(false);
+
       if (!data || !data.success) {
-        setErrorMessage(data?.message || 'Could not place phone call. Please check the mobile number and try again.');
+        let fallbackMsg = '';
+        if (targetMode === 'signin') {
+          fallbackMsg = isHindi 
+            ? "यह मोबाइल नंबर हमारे डेटाबेस में पंजीकृत नहीं है। कृपया पहले नया पंजीकरण (Sign Up) करें।"
+            : "This mobile number is not registered in our database. Please complete New Registration (Sign Up) first.";
+        } else {
+          fallbackMsg = isHindi
+            ? "कॉल करने में असमर्थ। कृपया 10-अंकों का मोबाइल नंबर जांचें और पुनः प्रयास करें।"
+            : "Could not place phone call. Please check your 10-digit mobile number and try again.";
+        }
+        setErrorMessage(data?.message || fallbackMsg);
+        return { success: false, message: data?.message || fallbackMsg };
       }
+
+      return { success: true, ...data };
     } catch (err) {
       console.error('Voice call trigger error:', err);
-      setErrorMessage('Could not connect to voice server. Please check your network.');
+      setErrorMessage(isHindi ? 'वॉयस सर्वर से कनेक्ट नहीं हो सका।' : 'Could not connect to voice server. Please check your network.');
+      setIsCallingPhone(false);
+      return { success: false };
     }
-
-    setIsCallingPhone(false);
   };
 
   // 1. Submit Registration Form -> Generates Cryptographic ABHA ID & Triggers Automated Voice Call
@@ -148,14 +167,17 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
     setErrorMessage('');
     const generatedId = generateSecureAbhaId(patientName, cleanP);
     setUniqueHealthId(generatedId);
-    setOtpValues(['', '', '', '', '', '']);
-    setTimer(30);
-    setStep('otp');
+    setActiveCallingPhone(cleanP);
 
-    await dispatchVoiceOtpCall(cleanP, patientName);
+    const callResult = await dispatchVoiceOtpCall(cleanP, patientName, 'signup');
+    if (callResult && callResult.success) {
+      setOtpValues(['', '', '', '', '', '']);
+      setTimer(30);
+      setStep('otp');
+    }
   };
 
-  // 2. Submit Sign In Form -> Validates & Triggers Voice Call
+  // 2. Submit Sign In Form -> Resolves Registered Phone from Unique ABHA ID & Triggers Voice Call
   const handleInitiateSignIn = async (e) => {
     if (e) e.preventDefault();
     if (!signInIdentifier.trim()) {
@@ -163,22 +185,21 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
       return;
     }
 
-    const cleanP = signInIdentifier.replace(/\D/g, '').slice(-10);
-    if (!cleanP || cleanP.length !== 10) {
-      setErrorMessage("Please enter a valid 10-digit mobile number.");
+    setErrorMessage('');
+    const callResult = await dispatchVoiceOtpCall(signInIdentifier.trim(), 'Patient', 'signin');
+    if (!callResult || !callResult.success) {
       return;
     }
 
-    setErrorMessage('');
-    const id = signInIdentifier.startsWith('91-') 
-      ? signInIdentifier 
-      : generateSecureAbhaId(patientName || 'User', cleanP);
-    setUniqueHealthId(id);
+    const resolvedPhone = callResult.phone || signInIdentifier.replace(/\D/g, '').slice(-10);
+    setActiveCallingPhone(resolvedPhone);
+    setUniqueHealthId(callResult.abhaId || signInIdentifier.trim());
+    if (callResult.userName) {
+      setPatientName(callResult.userName);
+    }
     setOtpValues(['', '', '', '', '', '']);
     setTimer(30);
     setStep('otp');
-
-    await dispatchVoiceOtpCall(cleanP, 'User');
   };
 
   // 3. Confirm Real Voice OTP -> Logs into Portal
@@ -193,15 +214,18 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
     setErrorMessage('');
     setIsVerifying(true);
 
-    const targetPhone = activeRole === 'patient' 
-      ? (authMode === 'signup' ? patientPhone : signInIdentifier) 
-      : doctorPhone;
+    const targetPhone = activeCallingPhone || (authMode === 'signup' ? patientPhone : signInIdentifier);
 
     try {
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: targetPhone, otp: enteredOtp })
+        body: JSON.stringify({ 
+          phone: targetPhone, 
+          identifier: uniqueHealthId || signInIdentifier, 
+          otp: enteredOtp,
+          mode: authMode
+        })
       });
       const data = await response.json();
       
@@ -211,38 +235,58 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
         return;
       }
 
-      // Successful verification
-      if (activeRole === 'patient') {
-        const activeName = authMode === 'signup' ? patientName.trim() : (patientName.trim() || `Patient (${signInIdentifier.slice(-4)})`);
-        const activeAge = authMode === 'signup' ? patientAge.trim() : '20';
-        const activeGender = authMode === 'signup' ? patientGender : 'Male';
-        const activePhone = authMode === 'signup' ? patientPhone : signInIdentifier;
+      // CRITICAL: If signing in, ensure user account was actually matched in the database
+      if (authMode === 'signin' && !data.user) {
+        setIsVerifying(false);
+        setErrorMessage(isHindi ? "यह खाता डेटाबेस में पंजीकृत नहीं है। कृपया पहले नया पंजीकरण (Sign Up) करें।" : "This account is not registered in our database. Please Sign Up first.");
+        return;
+      }
 
-        if (handleSuccess) {
-          handleSuccess({
-            role: 'patient',
-            name: activeName,
-            age: activeAge,
-            gender: activeGender,
-            phone: activePhone,
-            healthId: uniqueHealthId || `91-7482-9018-3562`,
-            isLoggedIn: true,
-            authMethod: 'Automated Voice Call Verified (ABDM Standard)'
-          });
+      // Successful verification -> Persist in Local Database & LocalStorage
+      const activeName = authMode === 'signup' 
+        ? patientName.trim() 
+        : (data.user?.name || patientName.trim() || 'Verified Patient');
+      const activeAge = authMode === 'signup' ? patientAge.trim() : (data.user?.age || '20');
+      const activeGender = authMode === 'signup' ? patientGender : (data.user?.gender || 'Male');
+      const activePhone = activeCallingPhone || (authMode === 'signup' ? patientPhone : signInIdentifier);
+
+      let userPayload = {
+        role: 'patient',
+        id: data.user?.id,
+        name: activeName,
+        age: activeAge,
+        gender: activeGender,
+        phone: activePhone,
+        abhaId: uniqueHealthId || data.user?.abhaId || `91-7482-9018-3562`,
+        isLoggedIn: true,
+        authMethod: 'Automated Voice Call Verified (ABDM Standard)'
+      };
+
+      // Persist to Server Database & Store Local Session Token
+      try {
+        const sessRes = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...userPayload, mode: authMode })
+        });
+        const sessData = await sessRes.json();
+        if (!sessData || !sessData.success) {
+          setIsVerifying(false);
+          setErrorMessage(sessData?.message || "Sign in failed: account not found.");
+          return;
         }
-      } else {
-        if (handleSuccess) {
-          handleSuccess({
-            role: 'doctor',
-            name: doctorName.trim() || 'Dr. Rajesh Sharma, MD',
-            specialty: doctorSpecialty.trim() || 'General Medicine & Pulmonology',
-            regNo: doctorRegNo.trim() || 'MCI-48291',
-            hospital: doctorHospital.trim() || 'Apollo Hospitals',
-            phone: doctorPhone || '9876543210',
-            isLoggedIn: true,
-            authMethod: 'MCI Verified Physician'
-          });
+        if (sessData && sessData.token) {
+          localStorage.setItem('prescripto_token', sessData.token);
+          localStorage.setItem('prescripto_user', JSON.stringify(sessData.user));
+          userPayload = { ...userPayload, ...sessData.user };
         }
+      } catch (err) {
+        console.warn('Could not persist session to backend, falling back to local session:', err);
+        localStorage.setItem('prescripto_user', JSON.stringify(userPayload));
+      }
+
+      if (handleSuccess) {
+        handleSuccess(userPayload);
       }
     } catch (err) {
       console.error('Verification error:', err);
@@ -252,76 +296,85 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
     }
   };
 
-  // Doctor Form Submit -> OTP Step
-  const handleInitiateDoctorLogin = async (e) => {
-    if (e) e.preventDefault();
-    if (!doctorName.trim() || !doctorRegNo.trim()) {
-      setErrorMessage("Doctor name and Medical Council Reg No (MCI) are mandatory.");
-      return;
-    }
-    const cleanP = doctorPhone.replace(/\D/g, '');
-    if (!cleanP || cleanP.length !== 10) {
-      setErrorMessage("Please enter a valid 10-digit mobile number for doctor verification call.");
-      return;
-    }
-    setErrorMessage('');
-    setUniqueHealthId(`DOC-${doctorRegNo}`);
-    setOtpValues(['', '', '', '', '', '']);
-    setTimer(30);
-    setStep('otp');
-
-    await dispatchVoiceOtpCall(cleanP, doctorName);
-  };
-
   return (
-    <div className="min-h-screen bg-[#f6f5ef] text-[#1c2726] flex flex-col justify-between p-4 sm:p-6 font-sans relative">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-[#051814] text-[#e2ebe9]' : 'bg-[#f6f5ef] text-[#1c2726]'} flex flex-col justify-between p-4 sm:p-6 font-sans relative transition-colors`}>
 
       {/* Top Navbar Header */}
       <div className="max-w-5xl w-full mx-auto flex items-center justify-between py-2">
         <div className="flex items-center space-x-2.5">
-          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-extrabold shadow-sm">
-            <HeartPulse className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-sm shadow-teal-500/20 bg-white flex items-center justify-center p-1 border border-teal-500/30 shrink-0">
+            <img src="/logo.png" alt="PrescriptoPlus Logo" className="w-full h-full object-contain" />
           </div>
           <div>
-            <span className="text-lg font-bold tracking-tight text-[#0f3e3a] font-heading">
-              Prescrip<span className="text-emerald-700">to</span> <span className="text-emerald-600 text-sm font-extrabold px-1.5 py-0.5 bg-emerald-100 rounded-md ml-1">PLUS</span>
-            </span>
-            <span className="text-[10px] text-slate-500 block font-normal -mt-0.5">Ayushman Bharat Digital EHR</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-base sm:text-xl font-black tracking-tight enchanted-brand-text inline-flex items-center group cursor-pointer transition-transform hover:scale-105 select-none">
+                <span>Prescripto<span className="text-teal-300">Plus</span></span>
+                <span className="ml-1 text-xs text-teal-300 opacity-80 group-hover:opacity-100 group-hover:rotate-45 transition-all duration-300">✦</span>
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                ABDM Certified
+              </span>
+            </div>
+            <p className={`text-[10px] sm:text-[11px] font-medium flex items-center space-x-1.5 ${isDarkMode ? 'text-teal-300/70' : 'text-slate-500'}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block" />
+              <span>AI Prescription & Health Co-Pilot</span>
+            </p>
           </div>
         </div>
 
-        {/* Language Picker */}
-        <div className="flex items-center bg-white border border-[#e8e6df] rounded-xl px-3 py-1 shadow-xs text-xs">
-          <Globe2 className="w-3.5 h-3.5 text-slate-400 mr-1.5" />
-          <select
-            value={selectedLang}
-            onChange={(e) => onSelectLang(e.target.value)}
-            className="bg-transparent font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1"
-          >
-            <option value="en">English (EN)</option>
-            <option value="hi">हिन्दी (Hindi)</option>
-          </select>
+        {/* Right Controls: Language Picker & Theme Toggle */}
+        <div className="flex items-center space-x-2.5">
+          <div className={`flex items-center border rounded-xl px-3 py-1.5 shadow-xs text-xs ${
+            isDarkMode ? 'bg-[#0a231f] border-[#164d41] text-white' : 'bg-white border-[#e8e6df] text-slate-700'
+          }`}>
+            <Globe2 className="w-3.5 h-3.5 text-teal-400 mr-1.5" />
+            <select
+              value={selectedLang}
+              onChange={(e) => onSelectLang(e.target.value)}
+              className="bg-transparent font-semibold focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="en" className={isDarkMode ? 'bg-[#0a231f] text-white' : 'bg-white text-slate-800'}>English (EN)</option>
+              <option value="hi" className={isDarkMode ? 'bg-[#0a231f] text-white' : 'bg-white text-slate-800'}>हिन्दी (Hindi)</option>
+            </select>
+          </div>
+
+          {onToggleTheme && (
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-xs ${
+                isDarkMode 
+                  ? 'bg-[#0b2420] border-[#1b4841] text-amber-300 hover:bg-[#123630]' 
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+              }`}
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          )}
         </div>
       </div>
 
       {/* Main Authentication Card */}
       <div className="max-w-md w-full mx-auto my-auto py-6">
-        <div className="bg-white border border-[#e8e6df] rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+        <div className={`border rounded-3xl p-6 sm:p-8 space-y-6 transition-colors ${
+          isDarkMode ? 'bg-[#0a231f] border-[#133d36] text-white shadow-xl' : 'bg-white border-[#e8e6df] text-[#1c2726] shadow-sm'
+        }`}>
           
           {/* Header Title */}
           <div className="text-center space-y-1.5">
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-              <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold">
+              <PhoneCall className="w-3.5 h-3.5 text-emerald-500" />
               <span>Automated Voice Call 2-Factor Authentication</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-serif-heading text-[#0f3e3a] tracking-tight">
+            <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-[#0f3e3a]'}`}>
               {step === 'otp' 
                 ? (isHindi ? "फोन कॉल OTP सत्यापन" : "Enter Verification OTP")
                 : (isHindi ? "सुरक्षित लॉगिन व पंजीकरण" : "Secure Clinical Access")}
             </h1>
-            <p className="text-xs text-slate-500 max-w-xs mx-auto">
+            <p className={`text-xs max-w-xs mx-auto ${isDarkMode ? 'text-teal-200/70' : 'text-slate-500'}`}>
               {step === 'otp'
-                ? `Please answer the automated call to +91 ••••• •${activeRole === 'patient' ? (authMode === 'signup' ? patientPhone.slice(-4) : signInIdentifier.slice(-4)) : doctorPhone.slice(-4)} to hear your code`
+                ? `Please answer the automated call to +91 ••••• •${(activeCallingPhone || (authMode === 'signup' ? patientPhone : signInIdentifier)).slice(-4)} ${uniqueHealthId ? `(Linked to ${uniqueHealthId})` : ''} to hear your code`
                 : (isHindi ? "14-अंकीय राष्ट्रीय स्वास्थ्य पहचान (ABHA) आधारित सुरक्षित ईएचआर" : "Instant automated phone call verification for encrypted EHR")}
             </p>
           </div>
@@ -329,34 +382,6 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
           {/* STEP 1: CREDENTIALS FORM */}
           {step === 'form' && (
             <>
-              {/* Dual-Role Selector Tabs */}
-              <div className="grid grid-cols-2 gap-1.5 bg-[#f6f5ef] p-1.5 rounded-2xl border border-[#e8e6df]">
-                <button
-                  type="button"
-                  onClick={() => { setActiveRole('patient'); setErrorMessage(''); }}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
-                    activeRole === 'patient'
-                      ? 'bg-[#0f3e3a] text-white shadow-xs'
-                      : 'text-slate-600 hover:text-[#0f3e3a]'
-                  }`}
-                >
-                  <span>👤 Patient Portal</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setActiveRole('doctor'); setErrorMessage(''); }}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
-                    activeRole === 'doctor'
-                      ? 'bg-[#0f3e3a] text-white shadow-xs'
-                      : 'text-slate-600 hover:text-[#0f3e3a]'
-                  }`}
-                >
-                  <Stethoscope className="w-3.5 h-3.5" />
-                  <span>🩺 Doctor Portal</span>
-                </button>
-              </div>
-
               {/* Validation Error Alert */}
               {errorMessage && (
                 <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-800 flex items-center space-x-2 animate-fade-in shadow-xs">
@@ -366,18 +391,19 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
               )}
 
               {/* PATIENT AUTH WORKFLOW */}
-              {activeRole === 'patient' && (
-                <div className="space-y-4 animate-fade-in">
+              <div className="space-y-4 animate-fade-in">
                   
                   {/* Mode Switcher: Sign In vs Sign Up */}
-                  <div className="flex items-center justify-center border-b border-[#e8e6df] pb-2 space-x-6 text-xs font-bold">
+                  <div className={`flex items-center justify-center border-b pb-2 space-x-6 text-xs font-bold ${
+                    isDarkMode ? 'border-[#164d41]' : 'border-[#e8e6df]'
+                  }`}>
                     <button
                       type="button"
                       onClick={() => { setAuthMode('signup'); setErrorMessage(''); }}
                       className={`pb-1 cursor-pointer transition-colors ${
                         authMode === 'signup' 
-                          ? 'text-[#0f3e3a] border-b-2 border-[#0f3e3a]' 
-                          : 'text-slate-400 hover:text-slate-700'
+                          ? 'text-teal-400 border-b-2 border-teal-400' 
+                          : isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-700'
                       }`}
                     >
                       ✨ New Registration (Sign Up)
@@ -387,8 +413,8 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                       onClick={() => { setAuthMode('signin'); setErrorMessage(''); }}
                       className={`pb-1 cursor-pointer transition-colors ${
                         authMode === 'signin' 
-                          ? 'text-[#0f3e3a] border-b-2 border-[#0f3e3a]' 
-                          : 'text-slate-400 hover:text-slate-700'
+                          ? 'text-teal-400 border-b-2 border-teal-400' 
+                          : isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-700'
                       }`}
                     >
                       🔑 Existing User (Sign In)
@@ -399,7 +425,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                   {authMode === 'signup' && (
                     <form onSubmit={handleInitiateSignUp} className="space-y-3.5">
                       <div>
-                        <label className="block text-xs font-bold text-[#0f3e3a] mb-1">
+                        <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-teal-200' : 'text-[#0f3e3a]'}`}>
                           {isHindi ? "मरीज का पूरा नाम *:" : "Patient Full Name *:"}
                         </label>
                         <input 
@@ -407,13 +433,17 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                           required
                           value={patientName}
                           onChange={(e) => setPatientName(e.target.value)}
-                          placeholder="e.g. Dev Soni"
-                          className="w-full bg-[#f6f5ef] border border-[#e8e6df] focus:border-[#0f3e3a] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none transition-colors"
+                          placeholder="e.g. navam"
+                          className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition-colors ${
+                            isDarkMode 
+                              ? 'bg-[#061915] border-[#164d41] text-white placeholder-slate-500 focus:border-teal-400 focus:bg-[#09221c]' 
+                              : 'bg-[#f6f5ef] border-[#e8e6df] text-slate-800 focus:border-[#0f3e3a] focus:bg-white'
+                          }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#0f3e3a] mb-1">
+                        <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-teal-200' : 'text-[#0f3e3a]'}`}>
                           {isHindi ? "मोबाइल नंबर (10 अंक) *:" : "Phone Number (10 digits) *:"}
                         </label>
                         <div className="relative">
@@ -424,15 +454,19 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                             maxLength="10"
                             value={patientPhone}
                             onChange={(e) => setPatientPhone(e.target.value.replace(/\D/g, ''))}
-                            placeholder="9876543210"
-                            className="w-full bg-[#f6f5ef] border border-[#e8e6df] focus:border-[#0f3e3a] focus:bg-white rounded-xl pl-10 pr-2.5 py-2 text-xs text-slate-800 focus:outline-none font-mono transition-colors"
+                            placeholder="9140427747"
+                            className={`w-full border rounded-xl pl-10 pr-2.5 py-2 text-xs focus:outline-none font-mono transition-colors ${
+                              isDarkMode 
+                                ? 'bg-[#061915] border-[#164d41] text-white placeholder-slate-500 focus:border-teal-400 focus:bg-[#09221c]' 
+                                : 'bg-[#f6f5ef] border-[#e8e6df] text-slate-800 focus:border-[#0f3e3a] focus:bg-white'
+                            }`}
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                          <label className="block text-xs font-bold text-[#0f3e3a] mb-1">
+                          <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-teal-200' : 'text-[#0f3e3a]'}`}>
                             {isHindi ? "उम्र *:" : "Age *:"}
                           </label>
                           <input 
@@ -442,39 +476,49 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                             max="120"
                             value={patientAge}
                             onChange={(e) => setPatientAge(e.target.value)}
-                            placeholder="20"
-                            className="w-full bg-[#f6f5ef] border border-[#e8e6df] focus:border-[#0f3e3a] focus:bg-white rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none font-mono"
+                            placeholder="22"
+                            className={`w-full border rounded-xl px-3.5 py-2 text-xs focus:outline-none font-mono ${
+                              isDarkMode 
+                                ? 'bg-[#061915] border-[#164d41] text-white placeholder-slate-500 focus:border-teal-400' 
+                                : 'bg-[#f6f5ef] border-[#e8e6df] text-slate-800 focus:border-[#0f3e3a] focus:bg-white'
+                            }`}
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-bold text-[#0f3e3a] mb-1">
+                          <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-teal-200' : 'text-[#0f3e3a]'}`}>
                             {isHindi ? "लिंग:" : "Gender:"}
                           </label>
                           <select
                             value={patientGender}
                             onChange={(e) => setPatientGender(e.target.value)}
-                            className="w-full bg-[#f6f5ef] border border-[#e8e6df] focus:border-[#0f3e3a] rounded-xl px-2.5 py-2 text-xs text-slate-800 focus:outline-none cursor-pointer"
+                            className={`w-full border rounded-xl px-2.5 py-2 text-xs focus:outline-none cursor-pointer ${
+                              isDarkMode 
+                                ? 'bg-[#061915] border-[#164d41] text-white' 
+                                : 'bg-[#f6f5ef] border-[#e8e6df] text-slate-800 focus:border-[#0f3e3a]'
+                            }`}
                           >
-                            <option value="Male">Male (पुरुष)</option>
-                            <option value="Female">Female (महिला)</option>
-                            <option value="Other">Other (अन्य)</option>
+                            <option value="Male" className={isDarkMode ? 'bg-[#061915] text-white' : ''}>Male (पुरुष)</option>
+                            <option value="Female" className={isDarkMode ? 'bg-[#061915] text-white' : ''}>Female (महिला)</option>
+                            <option value="Other" className={isDarkMode ? 'bg-[#061915] text-white' : ''}>Other (अन्य)</option>
                           </select>
                         </div>
                       </div>
 
                       {/* Unique ABHA Preview Badge */}
-                      <div className="p-3 bg-emerald-50/80 rounded-xl border border-emerald-200/80 text-[11px] text-emerald-950 flex items-center justify-between">
+                      <div className={`p-3 rounded-xl border text-[11px] flex items-center justify-between ${
+                        isDarkMode ? 'bg-[#0e302a] border-[#1f574d] text-teal-200' : 'bg-emerald-50/80 border-emerald-200/80 text-emerald-950'
+                      }`}>
                         <div className="flex items-center space-x-2">
-                          <Fingerprint className="w-4 h-4 text-emerald-700 shrink-0" />
+                          <Fingerprint className="w-4 h-4 text-emerald-400 shrink-0" />
                           <div>
                             <span className="font-bold block">ABDM 14-Digit National Health ID:</span>
-                            <span className="font-mono text-xs font-extrabold text-[#0f3e3a]">
+                            <span className="font-mono text-xs font-extrabold text-emerald-400">
                               {generateSecureAbhaId(patientName, patientPhone)}
                             </span>
                           </div>
                         </div>
-                        <span className="text-[10px] uppercase font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] uppercase font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                           Encrypted
                         </span>
                       </div>
@@ -482,9 +526,9 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                       <button
                         type="submit"
                         disabled={isCallingPhone}
-                        className="w-full py-3.5 rounded-xl bg-[#0f3e3a] hover:bg-[#134e4a] text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-sm flex items-center justify-center space-x-2"
+                        className="w-full py-3.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2"
                       >
-                        <PhoneCall className="w-4 h-4 text-emerald-300" />
+                        <PhoneCall className="w-4 h-4 text-emerald-200" />
                         <span>{isCallingPhone ? "Placing Automated Call..." : "Generate ID & Call Phone with OTP →"}</span>
                       </button>
                     </form>
@@ -494,7 +538,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                   {authMode === 'signin' && (
                     <form onSubmit={handleInitiateSignIn} className="space-y-3.5">
                       <div>
-                        <label className="block text-xs font-bold text-[#0f3e3a] mb-1">
+                        <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-teal-200' : 'text-[#0f3e3a]'}`}>
                           {isHindi ? "रजिस्टर्ड मोबाइल नंबर या ABHA ID *:" : "Registered Mobile Number or Unique ABHA ID *:"}
                         </label>
                         <input 
@@ -502,82 +546,26 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                           required
                           value={signInIdentifier}
                           onChange={(e) => setSignInIdentifier(e.target.value)}
-                          placeholder="e.g. 9876543210 or 91-7482-9018-3562"
-                          className="w-full bg-[#f6f5ef] border border-[#e8e6df] focus:border-[#0f3e3a] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none transition-colors"
+                          placeholder="e.g. 9140427747 or 91-7482-9018-3562"
+                          className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition-colors ${
+                            isDarkMode 
+                              ? 'bg-[#061915] border-[#164d41] text-white placeholder-slate-500 focus:border-teal-400 focus:bg-[#09221c]' 
+                              : 'bg-[#f6f5ef] border-[#e8e6df] text-slate-800 focus:border-[#0f3e3a] focus:bg-white'
+                          }`}
                         />
                       </div>
 
                       <button
                         type="submit"
                         disabled={isCallingPhone}
-                        className="w-full py-3.5 rounded-xl bg-[#0f3e3a] hover:bg-[#134e4a] text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-sm flex items-center justify-center space-x-2"
+                        className="w-full py-3.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2"
                       >
-                        <PhoneCall className="w-4 h-4 text-emerald-300" />
+                        <PhoneCall className="w-4 h-4 text-emerald-200" />
                         <span>{isCallingPhone ? "Calling Registered Mobile..." : "Call Phone with Login OTP →"}</span>
                       </button>
                     </form>
                   )}
-
                 </div>
-              )}
-
-              {/* DOCTOR AUTH WORKFLOW */}
-              {activeRole === 'doctor' && (
-                <form onSubmit={handleInitiateDoctorLogin} className="space-y-3.5 animate-fade-in">
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center space-x-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-                    <span>Physician & Medical Council Verification Station</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#0f3e3a] mb-1">Doctor Full Name *:</label>
-                    <input 
-                      type="text"
-                      required
-                      value={doctorName}
-                      onChange={(e) => setDoctorName(e.target.value)}
-                      placeholder="e.g. Dr. Rajesh Sharma, MD"
-                      className="w-full bg-[#f6f5ef] border border-[#e8e6df] focus:border-[#0f3e3a] rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-xs font-bold text-[#0f3e3a] mb-1">MCI Reg No *:</label>
-                      <input 
-                        type="text"
-                        required
-                        value={doctorRegNo}
-                        onChange={(e) => setDoctorRegNo(e.target.value)}
-                        placeholder="MCI-48291"
-                        className="w-full bg-[#f6f5ef] border border-[#e8e6df] focus:border-[#0f3e3a] rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none font-mono text-emerald-800 font-bold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-[#0f3e3a] mb-1">Mobile Number *:</label>
-                      <input 
-                        type="tel"
-                        required
-                        maxLength="10"
-                        value={doctorPhone}
-                        onChange={(e) => setDoctorPhone(e.target.value.replace(/\D/g, ''))}
-                        placeholder="9876543210"
-                        className="w-full bg-[#f6f5ef] border border-[#e8e6df] focus:border-[#0f3e3a] rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isCallingPhone}
-                    className="w-full py-3.5 rounded-xl bg-[#0f3e3a] hover:bg-[#134e4a] text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-sm flex items-center justify-center space-x-2 mt-2"
-                  >
-                    <PhoneCall className="w-4 h-4 text-emerald-300" />
-                    <span>{isCallingPhone ? "Calling Physician Number..." : "Verify MCI Credentials & Call Phone →"}</span>
-                  </button>
-                </form>
-              )}
             </>
           )}
 
@@ -586,14 +574,18 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
             <form onSubmit={handleVerifyOtp} className="space-y-4 animate-fade-in">
               
               {/* Unique ID Confirmation Banner */}
-              <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-300 flex items-center justify-between">
+              <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
+                isDarkMode ? 'bg-[#0e302a] border-[#1f574d]' : 'bg-emerald-50 border-emerald-300'
+              }`}>
                 <div>
-                  <div className="text-[10px] uppercase font-bold text-emerald-800">Assigned 14-Digit Health ID</div>
-                  <div className="font-mono text-sm font-extrabold text-[#0f3e3a]">
+                  <div className={`text-[10px] uppercase font-bold ${isDarkMode ? 'text-teal-300' : 'text-emerald-800'}`}>Assigned 14-Digit Health ID</div>
+                  <div className={`font-mono text-sm font-extrabold ${isDarkMode ? 'text-white' : 'text-[#0f3e3a]'}`}>
                     {uniqueHealthId || '91-7482-9018-3562'}
                   </div>
                 </div>
-                <div className="flex items-center space-x-1 text-emerald-700 text-xs font-bold bg-white px-2.5 py-1 rounded-xl border border-emerald-200 shadow-xs">
+                <div className={`flex items-center space-x-1 text-xs font-bold px-2.5 py-1 rounded-xl border shadow-xs ${
+                  isDarkMode ? 'bg-[#061915] text-emerald-400 border-[#164d41]' : 'bg-white text-emerald-700 border-emerald-200'
+                }`}>
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>ABDM Registered</span>
                 </div>
@@ -611,14 +603,16 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
               )}
 
               {/* Call Status Note */}
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center space-x-2">
-                <Volume2 className="w-4 h-4 text-amber-700 shrink-0 animate-pulse" />
+              <div className={`p-3 rounded-xl text-xs flex items-center space-x-2 border ${
+                isDarkMode ? 'bg-[#0e302a] border-[#1f574d] text-teal-200' : 'bg-amber-50 border-amber-200 text-amber-900'
+              }`}>
+                <Volume2 className="w-4 h-4 text-teal-400 shrink-0 animate-pulse" />
                 <span>An automated phone call is ringing your device. Answer the call to hear the 6-digit code.</span>
               </div>
 
               {/* 6-Digit OTP Inputs */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-center text-[#0f3e3a]">
+                <label className={`block text-xs font-bold text-center ${isDarkMode ? 'text-teal-200' : 'text-[#0f3e3a]'}`}>
                   {isHindi ? "फोन कॉल पर बोला गया 6-अंकों का OTP कोड दर्ज करें:" : "Enter 6-Digit OTP spoken on the phone call:"}
                 </label>
                 <div className="flex justify-center items-center gap-2">
@@ -637,7 +631,9 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                       className={`w-11 h-12 text-center text-lg font-bold font-mono rounded-xl focus:outline-none transition-all shadow-xs ${
                         errorMessage 
                           ? 'bg-rose-50 border-2 border-rose-400 text-rose-900 focus:border-rose-600' 
-                          : 'bg-[#f6f5ef] border-2 border-[#e8e6df] text-slate-900 focus:border-emerald-600 focus:bg-white'
+                          : isDarkMode
+                            ? 'bg-[#061915] border-2 border-[#164d41] text-white focus:border-teal-400 focus:bg-[#09221c]'
+                            : 'bg-[#f6f5ef] border-2 border-[#e8e6df] text-slate-900 focus:border-emerald-600 focus:bg-white'
                       }`}
                     />
                   ))}
@@ -645,19 +641,19 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
               </div>
 
               {/* Resend OTP / Timer */}
-              <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+              <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
                 <span>
                   {timer > 0 ? (
-                    <span>Call again in <strong className="font-mono text-[#0f3e3a]">{timer}s</strong></span>
+                    <span>Call again in <strong className={`font-mono ${isDarkMode ? 'text-teal-300' : 'text-[#0f3e3a]'}`}>{timer}s</strong></span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => {
                         setTimer(30);
-                        const p = activeRole === 'patient' ? (authMode === 'signup' ? patientPhone : signInIdentifier) : doctorPhone;
-                        dispatchVoiceOtpCall(p);
+                        const p = activeCallingPhone || (authMode === 'signup' ? patientPhone : signInIdentifier);
+                        dispatchVoiceOtpCall(p, patientName || 'Patient', authMode);
                       }}
-                      className="text-emerald-700 font-bold hover:underline cursor-pointer flex items-center space-x-1"
+                      className="text-teal-400 font-bold hover:underline cursor-pointer flex items-center space-x-1"
                     >
                       <RotateCcw className="w-3 h-3" />
                       <span>📞 Call Again (Resend Voice OTP)</span>
@@ -667,7 +663,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                 <button
                   type="button"
                   onClick={() => { setStep('form'); setErrorMessage(''); }}
-                  className="text-slate-400 hover:text-slate-700 underline cursor-pointer"
+                  className="text-slate-400 hover:text-teal-300 underline cursor-pointer"
                 >
                   Change Number
                 </button>
@@ -677,9 +673,9 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
               <button
                 type="submit"
                 disabled={isVerifying}
-                className="w-full py-3.5 rounded-xl bg-[#0f3e3a] hover:bg-[#134e4a] text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-sm flex items-center justify-center space-x-2 hover:shadow-md"
+                className="w-full py-3.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2 hover:shadow-lg"
               >
-                <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                <ShieldCheck className="w-4 h-4 text-emerald-200" />
                 <span>{isVerifying ? "Verifying Voice OTP..." : "Confirm Voice Code & Enter Workspace →"}</span>
               </button>
 
@@ -696,7 +692,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
 
       {/* Footer */}
       <div className="max-w-5xl w-full mx-auto text-center text-xs text-slate-400 py-2">
-        Prescripto Plus • ABDM Compliant Patient & Doctor EHR Workspace
+        PrescriptoPlus • ABDM Compliant Patient EHR & Jan Aushadhi Health Workspace
       </div>
 
     </div>

@@ -1,63 +1,234 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-  }
+@custom-variant dark (&:where(.dark, .dark *));
 
-  body {
-    font-family: var(--font-sans);
-    background-color: #f8fafc;
-    color: #0f172a;
-  }
+:root {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color-scheme: light dark;
 }
 
-@keyframes scan-line {
-  0% {
-    top: 0%;
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    top: 96%;
-    opacity: 0.8;
-  }
+body {
+  background-color: #f6f5ef;
+  color: #1c2726;
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
-.animate-scan-laser {
-  animation: scan-line 2.2s ease-in-out infinite alternate;
+.font-serif-heading {
+  font-family: 'Instrument Serif', Georgia, serif;
 }
 
-/* Custom Clean White/Green Card Styles */
-.white-card {
+.font-heading {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Elegant Light Healthcare Cards */
+.mediflow-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  border: 1px solid #e8e6df;
+  border-radius: 1.25rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
 }
 
-.white-card-hover {
-  transition: all 0.2s ease-in-out;
-}
-.white-card-hover:hover {
-  border-color: #a7f3d0;
-  box-shadow: 0 4px 12px -2px rgba(5, 150, 105, 0.08);
+.mediflow-card-hover {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Scrollbars */
+.mediflow-card-hover:hover {
+  border-color: #0f3e3a;
+  box-shadow: 0 10px 25px -5px rgba(15, 62, 58, 0.06);
+  transform: translateY(-1px);
+}
+
+/* Deep Forest Sidebar */
+.mediflow-sidebar {
+  background-color: #0d2b27;
+  color: #d1e3e0;
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f1f0e9;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 9999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* ================= ENCHANTING HEALTHCARE ANIMATIONS & GRADIENTS ================= */
+
+@keyframes aurora-gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes enchant-pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 25px rgba(20, 184, 166, 0.2), 0 0 50px rgba(16, 185, 129, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(45, 212, 191, 0.4), 0 0 80px rgba(6, 182, 212, 0.2);
+  }
+}
+
+@keyframes star-twinkle {
+
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.7) rotate(0deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.25) rotate(180deg);
+  }
+}
+
+@keyframes float-subtle {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.enchanted-brand-text {
+  background: linear-gradient(120deg, #10b981 0%, #14b8a6 25%, #06b6d4 50%, #34d399 75%, #10b981 100%);
+  background-size: 250% 250%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: aurora-gradient-flow 5s ease infinite;
+  filter: drop-shadow(0 2px 10px rgba(45, 212, 191, 0.4));
+}
+
+.enchanted-greeting-text {
+  background: linear-gradient(120deg, #ffffff 0%, #a7f3d0 25%, #2dd4bf 50%, #38bdf8 75%, #ffffff 100%);
+  background-size: 240% 240%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: aurora-gradient-flow 4.5s ease infinite;
+  filter: drop-shadow(0 0 20px rgba(45, 212, 191, 0.55));
+}
+
+.enchanted-greeting-badge {
+  background: radial-gradient(circle at center, rgba(20, 184, 166, 0.3) 0%, rgba(6, 182, 212, 0.1) 100%);
+  backdrop-filter: blur(8px);
+}
+
+.enchanted-hero-card {
+  background: radial-gradient(circle at 85% 15%, rgba(20, 184, 166, 0.22) 0%, transparent 50%),
+    radial-gradient(circle at 10% 85%, rgba(6, 182, 212, 0.18) 0%, transparent 45%),
+    linear-gradient(135deg, #07231d 0%, #0c362e 45%, #082620 100%);
+  animation: enchant-pulse-glow 6s ease-in-out infinite;
+}
+
+.twinkle-star-1 {
+  animation: star-twinkle 3s ease-in-out infinite;
+}
+
+.twinkle-star-2 {
+  animation: star-twinkle 4.5s ease-in-out infinite 1s;
+}
+
+.twinkle-star-3 {
+  animation: star-twinkle 3.8s ease-in-out infinite 2s;
+}
+
+.float-animation {
+  animation: float-subtle 4s ease-in-out infinite;
+}
+
+@keyframes shining-line-sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  60%,
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+.animate-shining-line {
+  animation: shining-line-sweep 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes enchanted-border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.enchanted-border-wrapper {
+  background: linear-gradient(135deg, #14b8a6, #10b981, #06b6d4, #34d399, #14b8a6);
+  background-size: 300% 300%;
+  animation: enchanted-border-flow 8s ease infinite;
+}
+
+.enchanted-glass-pill {
+  background: rgba(10, 42, 36, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.enchanted-glass-pill:hover {
+  background: rgba(14, 58, 50, 0.85);
+  border-color: rgba(94, 234, 212, 0.6);
+  box-shadow: 0 0 20px rgba(45, 212, 191, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.enchanted-mood-active {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.4) 0%, rgba(16, 185, 129, 0.35) 100%);
+  border: 1.5px solid #2dd4bf;
+  box-shadow: 0 0 25px rgba(45, 212, 191, 0.45), inset 0 0 12px rgba(20, 184, 166, 0.25);
+}
+
+.enchanted-cta-button {
+  background: linear-gradient(135deg, #ffffff 0%, #ccfbf1 40%, #a7f3d0 100%);
+  box-shadow: 0 0 25px rgba(45, 212, 191, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.enchanted-cta-button:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #e6fffa 50%, #99f6e4 100%);
+  box-shadow: 0 0 35px rgba(45, 212, 191, 0.6), 0 10px 30px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px) scale(1.03);
 }
