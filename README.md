@@ -28,13 +28,11 @@
 - [How It Works](#-how-it-works)
 - [Key Features](#-key-features)
 - [Tech Stack](#-tech-stack)
-- [Screenshots](#-screenshots)
 - [Getting Started](#-getting-started)
 - [Project Structure](#-project-structure)
 - [Safety & Privacy](#-safety--privacy)
 - [Future Scope](#-future-scope)
 - [Team](#-team)
-- [License](#-license)
 
 ---
 
@@ -108,16 +106,6 @@ One workflow turns a paper slip into a verified care plan:
 - Blank-login policy
 - Derived data clears automatically when uploads are removed
 
-## 📸 Screenshots
-
-| AI Prescription OCR | Doctor Verification (HITL) |
-|---|---|
-| ![OCR upload screen](./assets/screenshot-ocr.png) | ![Doctor verification screen](./assets/screenshot-doctor-verify.png) |
-
-| Jan Aushadhi Savings | Nearest Kendra Locator |
-|---|---|
-| ![Savings comparison screen](./assets/screenshot-savings.png) | ![Kendra locator modal](./assets/screenshot-kendra-locator.png) |
-
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -189,10 +177,6 @@ Prescripto/
 | Member | Navam | [ExponentL](https://github.com/ExponentL) |
 
 Built for **IEEE Hack Synapse 2026** — a 36-hour offline hackathon organized by IEEE IAS & IEEE RAS, MITS-DU Gwalior, in collaboration with HackIndia.
-
-## 📄 License
-
-Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more information.
 
 ---
 
