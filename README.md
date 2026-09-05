@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="./assets/prescripto-logo.png" alt="Prescripto Logo" width="120"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20&height=180&section=header&text=Prescripto&fontSize=55&fontColor=ffffff&animation=fadeIn&fontAlignY=45" width="100%"/>
 
-# Prescripto
+<img src="./assets/prescripto-logo.png" alt="Prescripto Logo" width="90"/>
 
-### AI Reads • Doctor Verifies • Patient Listens
+<br/>
 
-**Turning a paper prescription into a verified, actionable care plan.**
+<img src="https://readme-typing-svg.demolab.com/?font=Georgia&size=24&pause=1200&color=2DD4BF&center=true&vCenter=true&width=650&lines=AI+Reads+%E2%80%A2+Doctor+Verifies+%E2%80%A2+Patient+Listens;Turning+a+paper+prescription+into+a+verified+care+plan.;Built+at+IEEE+Hack+Synapse+2026" alt="Typing SVG"/>
 
 [![Made for IEEE Hack Synapse 2026](https://img.shields.io/badge/IEEE-Hack%20Synapse%202026-6f42c1)](#)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](#)
@@ -14,7 +14,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-38BDF8?logo=tailwindcss&logoColor=white)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 
-[Demo Video](#) · [Report Bug](../../issues) · [Request Feature](../../issues)
+[![Open Live Demo](https://img.shields.io/badge/Open%20Live%20Demo-2dd4bf?style=for-the-badge&logo=vercel&logoColor=black)](https://prescripto.dpdns.org/)
 
 </div>
 
@@ -199,3 +199,5 @@ Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more informati
 <div align="center">
 Made with ❤️ by Team Logiccoders
 </div>
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20&height=120&section=footer"/>
