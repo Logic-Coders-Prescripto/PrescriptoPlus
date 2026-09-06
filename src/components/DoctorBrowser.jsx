@@ -29,7 +29,7 @@ const SEED_DOCTORS = [
     fee: "₹800",
     availableSlots: ["10:30 AM", "12:00 PM", "04:30 PM", "06:00 PM"],
     regNo: "MCI-48291",
-    image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=800&auto=format&fit=crop&q=80"
+    image: "/doctors/doc-1.svg"
   },
   {
     id: "doc-2",
@@ -43,7 +43,7 @@ const SEED_DOCTORS = [
     fee: "₹750",
     availableSlots: ["09:30 AM", "11:00 AM", "03:00 PM", "05:30 PM"],
     regNo: "MCI-39102",
-    image: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?w=800&auto=format&fit=crop&q=80"
+    image: "/doctors/doc-2.svg"
   },
   {
     id: "doc-3",
@@ -57,7 +57,7 @@ const SEED_DOCTORS = [
     fee: "₹1,000",
     availableSlots: ["11:30 AM", "02:00 PM", "04:00 PM"],
     regNo: "MCI-52019",
-    image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=800&auto=format&fit=crop&q=80"
+    image: "/doctors/doc-3.svg"
   },
   {
     id: "doc-4",
@@ -71,9 +71,32 @@ const SEED_DOCTORS = [
     fee: "₹900",
     availableSlots: ["10:00 AM", "01:30 PM", "05:00 PM"],
     regNo: "MCI-61042",
-    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800&auto=format&fit=crop&q=80"
+    image: "/doctors/doc-4.svg"
   }
 ];
+
+function DoctorAvatar({ doc }) {
+  const [hasError, setHasError] = useState(false);
+  const initials = doc.name.replace('Dr. ', '').split(' ').map(n => n[0]).join('').slice(0, 2);
+
+  if (hasError) {
+    return (
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-700 to-emerald-800 text-white flex flex-col items-center justify-center font-black border border-teal-500/40 shadow-xs shrink-0">
+        <Stethoscope className="w-4 h-4 text-emerald-300 mb-0.5" />
+        <span className="text-xs tracking-wider">{initials}</span>
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={doc.image} 
+      alt={doc.name}
+      onError={() => setHasError(true)}
+      className="w-16 h-16 rounded-2xl object-cover border border-teal-600/30 dark:border-teal-700/50 shrink-0 bg-teal-950/40 shadow-xs" 
+    />
+  );
+}
 
 // Helper to generate next 5 upcoming days
 const getUpcomingDays = () => {
@@ -244,15 +267,7 @@ export function DoctorBrowser({ onBookAppointment, selectedLang, isDarkMode = fa
               <div className="space-y-4">
                 {/* Doctor Bio Row */}
                 <div className="flex items-start space-x-4">
-                  <img 
-                    src={doc.image} 
-                    alt={doc.name}
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800&auto=format&fit=crop&q=80";
-                    }}
-                    className="w-16 h-16 rounded-2xl object-cover border border-[#133d36] dark:border-teal-800/40 shrink-0 bg-slate-800 shadow-xs" 
-                  />
+                  <DoctorAvatar doc={doc} />
 
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center justify-between">
