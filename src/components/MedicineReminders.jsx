@@ -16,6 +16,7 @@ import {
   Plus,
   Inbox
 } from 'lucide-react';
+import { apiUrl } from '../config/api';
 
 export function MedicineReminders({ 
   medicines = [], 
@@ -30,7 +31,7 @@ export function MedicineReminders({
   // Restore saved routines from database if medicines prop is empty
   useEffect(() => {
     if ((!medicines || medicines.length === 0) && userId) {
-      fetch(`/api/reminders/user/${userId}`)
+      fetch(apiUrl(`/api/reminders/user/${userId}`))
         .then(res => res.json())
         .then(data => {
           if (data && data.success && data.data && data.data.length > 0) {
@@ -169,7 +170,7 @@ export function MedicineReminders({
 
       // Synchronize reminder adherence to server database
       try {
-        fetch('/api/reminders/sync', {
+        fetch(apiUrl('/api/reminders/sync'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -15,6 +15,7 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
+import { apiUrl } from '../config/api';
 
 // Cryptographic ABDM Standard 14-Digit Non-Predictable Health ID Generator (Name + Phone + Salt)
 export function generateSecureAbhaId(name = '', phone = '') {
@@ -49,8 +50,8 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
   // Sign Up Fields
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
-  const [patientAge, setPatientAge] = useState('');
-  const [patientGender, setPatientGender] = useState('Male');
+  const [patientAge, setPatientAge] = useState('20');
+  const [patientGender, setPatientGender] = useState('Other');
 
   // Sign In Fields
   const [signInIdentifier, setSignInIdentifier] = useState('');
@@ -110,7 +111,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
 
     try {
       const targetMode = mode || authMode;
-      const response = await fetch('/api/auth/send-otp', {
+      const response = await fetch(apiUrl('/api/auth/send-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -159,10 +160,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
       setErrorMessage(isHindi ? "कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें।" : "Please enter a valid 10-digit mobile number.");
       return;
     }
-    if (!patientAge || parseInt(patientAge) <= 0 || parseInt(patientAge) > 120) {
-      setErrorMessage(isHindi ? "कृपया सही उम्र दर्ज करें।" : "Please enter a valid age between 1 and 120.");
-      return;
-    }
+
 
     setErrorMessage('');
     const generatedId = generateSecureAbhaId(patientName, cleanP);
@@ -217,7 +215,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
     const targetPhone = activeCallingPhone || (authMode === 'signup' ? patientPhone : signInIdentifier);
 
     try {
-      const response = await fetch('/api/auth/verify-otp', {
+      const response = await fetch(apiUrl('/api/auth/verify-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -264,7 +262,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
 
       // Persist to Server Database & Store Local Session Token
       try {
-        const sessRes = await fetch('/api/auth/session', {
+        const sessRes = await fetch(apiUrl('/api/auth/session'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...userPayload, mode: authMode })
@@ -433,7 +431,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                           required
                           value={patientName}
                           onChange={(e) => setPatientName(e.target.value)}
-                          placeholder="e.g. navam"
+                          placeholder="e.g. Rahul Sharma"
                           className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition-colors ${
                             isDarkMode 
                               ? 'bg-[#061915] border-[#164d41] text-white placeholder-slate-500 focus:border-teal-400 focus:bg-[#09221c]' 
@@ -454,54 +452,13 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                             maxLength="10"
                             value={patientPhone}
                             onChange={(e) => setPatientPhone(e.target.value.replace(/\D/g, ''))}
-                            placeholder="9140427747"
+                            placeholder="9876543210"
                             className={`w-full border rounded-xl pl-10 pr-2.5 py-2 text-xs focus:outline-none font-mono transition-colors ${
                               isDarkMode 
                                 ? 'bg-[#061915] border-[#164d41] text-white placeholder-slate-500 focus:border-teal-400 focus:bg-[#09221c]' 
                                 : 'bg-[#f6f5ef] border-[#e8e6df] text-slate-800 focus:border-[#0f3e3a] focus:bg-white'
                             }`}
                           />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <div>
-                          <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-teal-200' : 'text-[#0f3e3a]'}`}>
-                            {isHindi ? "उम्र *:" : "Age *:"}
-                          </label>
-                          <input 
-                            type="number"
-                            required
-                            min="1"
-                            max="120"
-                            value={patientAge}
-                            onChange={(e) => setPatientAge(e.target.value)}
-                            placeholder="22"
-                            className={`w-full border rounded-xl px-3.5 py-2 text-xs focus:outline-none font-mono ${
-                              isDarkMode 
-                                ? 'bg-[#061915] border-[#164d41] text-white placeholder-slate-500 focus:border-teal-400' 
-                                : 'bg-[#f6f5ef] border-[#e8e6df] text-slate-800 focus:border-[#0f3e3a] focus:bg-white'
-                            }`}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-teal-200' : 'text-[#0f3e3a]'}`}>
-                            {isHindi ? "लिंग:" : "Gender:"}
-                          </label>
-                          <select
-                            value={patientGender}
-                            onChange={(e) => setPatientGender(e.target.value)}
-                            className={`w-full border rounded-xl px-2.5 py-2 text-xs focus:outline-none cursor-pointer ${
-                              isDarkMode 
-                                ? 'bg-[#061915] border-[#164d41] text-white' 
-                                : 'bg-[#f6f5ef] border-[#e8e6df] text-slate-800 focus:border-[#0f3e3a]'
-                            }`}
-                          >
-                            <option value="Male" className={isDarkMode ? 'bg-[#061915] text-white' : ''}>Male (पुरुष)</option>
-                            <option value="Female" className={isDarkMode ? 'bg-[#061915] text-white' : ''}>Female (महिला)</option>
-                            <option value="Other" className={isDarkMode ? 'bg-[#061915] text-white' : ''}>Other (अन्य)</option>
-                          </select>
                         </div>
                       </div>
 
@@ -546,7 +503,7 @@ export function FinalLoginPage({ onLogin, onLoginSuccess, selectedLang, onSelect
                           required
                           value={signInIdentifier}
                           onChange={(e) => setSignInIdentifier(e.target.value)}
-                          placeholder="e.g. 9140427747 or 91-7482-9018-3562"
+                          placeholder="e.g. 9876543210 or 91-7482-9018-3562"
                           className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition-colors ${
                             isDarkMode 
                               ? 'bg-[#061915] border-[#164d41] text-white placeholder-slate-500 focus:border-teal-400 focus:bg-[#09221c]' 

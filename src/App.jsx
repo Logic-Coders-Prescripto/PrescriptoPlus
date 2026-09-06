@@ -53,6 +53,7 @@ import { AbdmFhirExportModal } from './components/AbdmFhirExportModal';
 import { getVisualGroundingForMed } from './utils/visualGroundingData';
 import { parsePrescriptionImage } from './utils/prescriptionParser';
 import { SAMPLE_PRESCRIPTIONS } from './data/samplePrescriptions';
+import { apiUrl } from './config/api';
 
 export function App() {
   // Global Theme State: Light / Dark Mode (Defaults to Dark Mode as shown in primary screenshots, persists in localStorage)
@@ -73,13 +74,13 @@ export function App() {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState({
-    name: "navam",
-    age: 22,
-    gender: "Male",
-    phone: "9140427747",
+    name: "",
+    age: "",
+    gender: "",
+    phone: "",
     role: "patient",
-    healthId: "ABHA-7890-9357",
-    email: "prescriptoplus@customersupport.com"
+    healthId: "",
+    email: ""
   });
 
   // Navigation State
@@ -211,7 +212,7 @@ export function App() {
 
     if (savedToken) {
       // Validate session with server database
-      fetch('/api/auth/me', {
+      fetch(apiUrl('/api/auth/me'), {
         headers: { 'Authorization': `Bearer ${savedToken}` }
       })
         .then(res => res.json())
@@ -222,7 +223,7 @@ export function App() {
             setIsAuthenticated(true);
 
             // Restore user's saved prescriptions from database
-            fetch(`/api/prescriptions/user/${restoredUser.id}`)
+            fetch(apiUrl(`/api/prescriptions/user/${restoredUser.id}`))
               .then(r => r.json())
               .then(rxData => {
                 if (rxData && rxData.success && Array.isArray(rxData.data) && rxData.data.length > 0) {
@@ -328,7 +329,7 @@ export function App() {
   useEffect(() => {
     if (currentUser?.id) {
       // Fetch user appointments
-      fetch(`/api/appointments/my?userId=${currentUser.id}&role=${currentUser.role || 'patient'}`)
+      fetch(apiUrl(`/api/appointments/my?userId=${currentUser.id}&role=${currentUser.role || 'patient'}`))
         .then(r => r.json())
         .then(data => {
           if (data && data.success && Array.isArray(data.data)) {
@@ -342,12 +343,12 @@ export function App() {
   // Book Appointment via Backend API
   const handleBookAppointment = async (apt) => {
     try {
-      const res = await fetch('/api/appointments/book', {
+      const res = await fetch(apiUrl('/api/appointments/book'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patientId: currentUser.id || 'usr-1',
-          patientName: currentUser.name || 'navam',
+          patientName: currentUser.name || 'Patient',
           doctorId: apt.doctorId || 'doc-1',
           date: apt.date,
           time: apt.time
@@ -369,7 +370,7 @@ export function App() {
   const handleCancelAppointment = async (aptId) => {
     setAppointments(prev => prev.filter(a => a.id !== aptId));
     try {
-      await fetch(`/api/appointments/${aptId}/cancel`, { method: 'POST' });
+      await fetch(apiUrl(`/api/appointments/${aptId}/cancel`), { method: 'POST' });
     } catch (err) {
       console.warn('Cancel appointment error:', err);
     }
@@ -383,13 +384,13 @@ export function App() {
     const updatedUser = {
       ...currentUser,
       id: credentials.id || currentUser.id || 'usr-1',
-      name: credentials.name || 'navam',
-      age: credentials.age || 22,
-      gender: credentials.gender || "Male",
-      phone: credentials.phone || "9140427747",
+      name: credentials.name || 'Patient',
+      age: credentials.age || "",
+      gender: credentials.gender || "",
+      phone: credentials.phone || "",
       role: 'patient',
-      healthId: credentials.abhaId || credentials.healthId || "ABHA-7890-9357",
-      email: "prescriptoplus@customersupport.com"
+      healthId: credentials.abhaId || credentials.healthId || "",
+      email: credentials.email || ""
     };
 
     setCurrentUser(updatedUser);
@@ -398,7 +399,7 @@ export function App() {
 
     // Fetch user's existing prescriptions from database
     if (updatedUser.id) {
-      fetch(`/api/prescriptions/user/${updatedUser.id}`)
+      fetch(apiUrl(`/api/prescriptions/user/${updatedUser.id}`))
         .then(r => r.json())
         .then(rxData => {
           if (rxData && rxData.success && Array.isArray(rxData.data) && rxData.data.length > 0) {
@@ -420,7 +421,7 @@ export function App() {
     try {
       const token = localStorage.getItem('prescripto_token');
       if (token) {
-        await fetch('/api/auth/logout', {
+        await fetch(apiUrl('/api/auth/logout'), {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })
@@ -496,7 +497,7 @@ export function App() {
       // Persist the extracted prescription to user's database record
       try {
         const currentUserId = currentUser?.id || 'usr-1';
-        fetch('/api/prescriptions/save', {
+        fetch(apiUrl('/api/prescriptions/save'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -556,7 +557,7 @@ export function App() {
     // Persist to user's record in server database
     try {
       const currentUserId = currentUser?.id || 'usr-1';
-      fetch('/api/prescriptions/save', {
+      fetch(apiUrl('/api/prescriptions/save'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -762,7 +763,7 @@ export function App() {
                   <div className="p-2 border-b border-slate-500/20 text-xs">
                     <div className="font-bold">{currentUser.name}</div>
                     <div className="text-[11px] text-teal-400 font-mono">{currentUser.healthId}</div>
-                    <div className="text-[10px] text-slate-400 mt-1">{currentUser.phone || "9140427747"}</div>
+                    <div className="text-[10px] text-slate-400 mt-1">{currentUser.phone}</div>
                     <div className="text-[10px] text-slate-400 truncate">{currentUser.email}</div>
                   </div>
 

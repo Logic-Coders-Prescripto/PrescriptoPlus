@@ -1,6 +1,6 @@
 # 🏥 PrescriptoPlus - AI-Powered Prescription & Clinical Healthcare Platform
 
-PrescriptoPlus is an advanced, AI-driven healthcare intelligence and prescription digitization platform. IT features instant OCR prescription analysis, automated medicine schedules, PMBJP Jan Aushadhi generic cost-saving comparisons, visual grounding inspection, Indian diet & ayurvedic contraindications, ABDM/FHIR compliant health record exports, and enchanting interactive interfaces.
+PrescriptoPlus is an advanced, AI-driven healthcare intelligence and prescription digitization platform. It features instant OCR prescription analysis, automated medicine schedules, PMBJP Jan Aushadhi generic cost-saving comparisons, visual grounding inspection, Indian diet & ayurvedic contraindications, ABDM/FHIR compliant health record exports, and enchanting interactive interfaces.
 
 ---
 
