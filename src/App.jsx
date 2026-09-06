@@ -53,7 +53,6 @@ import { AbdmFhirExportModal } from './components/AbdmFhirExportModal';
 import { getVisualGroundingForMed } from './utils/visualGroundingData';
 import { parsePrescriptionImage } from './utils/prescriptionParser';
 import { SAMPLE_PRESCRIPTIONS } from './data/samplePrescriptions';
-import { apiUrl } from './config/api';
 
 export function App() {
   // Global Theme State: Light / Dark Mode (Defaults to Dark Mode as shown in primary screenshots, persists in localStorage)
@@ -71,16 +70,32 @@ export function App() {
     }
   }, [isDarkMode]);
 
-  // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState({
-    name: "",
-    age: "",
-    gender: "",
-    phone: "",
-    role: "patient",
-    healthId: "",
-    email: ""
+  // Authentication State with Permanent Local Storage Persistence
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      const savedToken = localStorage.getItem('prescripto_token');
+      const savedUserRaw = localStorage.getItem('prescripto_user');
+      return !!(savedToken || savedUserRaw);
+    } catch (e) {
+      return false;
+    }
+  });
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const savedUserRaw = localStorage.getItem('prescripto_user');
+      if (savedUserRaw) {
+        return JSON.parse(savedUserRaw);
+      }
+    } catch (e) {}
+    return {
+      name: "Rahul",
+      age: 22,
+      gender: "Male",
+      phone: "9140427747",
+      role: "patient",
+      healthId: "ABHA-7890-9357",
+      email: "prescriptoplus@customersupport.com"
+    };
   });
 
   // Navigation State
@@ -108,19 +123,50 @@ export function App() {
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Prescriptions State
-  const [uploadedImage, setUploadedImage] = useState(null);
+  // Prescriptions State (With LocalStorage Persistence)
+  const [uploadedImage, setUploadedImage] = useState(() => {
+    try { return localStorage.getItem('prescripto_rx_img') || null; } catch(e) { return null; }
+  });
   const [isScanning, setIsScanning] = useState(false);
   const [scanStatusText, setScanStatusText] = useState('');
   const [scanErrorMessage, setScanErrorMessage] = useState('');
-  const [currentMedicines, setCurrentMedicines] = useState([]);
-  const [currentSafetyAlerts, setCurrentSafetyAlerts] = useState([]);
+  const [currentMedicines, setCurrentMedicines] = useState(() => {
+    try {
+      const saved = localStorage.getItem('prescripto_rx_meds');
+      return saved ? JSON.parse(saved) : [];
+    } catch(e) { return []; }
+  });
+  const [currentSafetyAlerts, setCurrentSafetyAlerts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('prescripto_rx_alerts');
+      return saved ? JSON.parse(saved) : [];
+    } catch(e) { return []; }
+  });
   const [overallConfidence, setOverallConfidence] = useState(98);
-  const [decodedCategory, setDecodedCategory] = useState('');
-  const [doctorSpecialty, setDoctorSpecialty] = useState('');
+  const [decodedCategory, setDecodedCategory] = useState(() => {
+    try { return localStorage.getItem('prescripto_rx_cat') || ''; } catch(e) { return ''; }
+  });
+  const [doctorSpecialty, setDoctorSpecialty] = useState(() => {
+    try { return localStorage.getItem('prescripto_rx_spec') || ''; } catch(e) { return ''; }
+  });
 
   // Daily Tasks State (Synchronized dynamically with active uploaded prescription)
   const [tasks, setTasks] = useState([]);
+
+  // Auto-sync prescription to localStorage so it is 100% resilient across reloads/network drops
+  useEffect(() => {
+    try {
+      if (currentMedicines && currentMedicines.length > 0) {
+        localStorage.setItem('prescripto_rx_meds', JSON.stringify(currentMedicines));
+      }
+      if (currentSafetyAlerts && currentSafetyAlerts.length > 0) {
+        localStorage.setItem('prescripto_rx_alerts', JSON.stringify(currentSafetyAlerts));
+      }
+      if (decodedCategory) localStorage.setItem('prescripto_rx_cat', decodedCategory);
+      if (doctorSpecialty) localStorage.setItem('prescripto_rx_spec', doctorSpecialty);
+      if (uploadedImage) localStorage.setItem('prescripto_rx_img', uploadedImage);
+    } catch (e) {}
+  }, [currentMedicines, currentSafetyAlerts, decodedCategory, doctorSpecialty, uploadedImage]);
 
   // Dynamic time and wellness mood for Enchanted Hero Panel
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -212,7 +258,7 @@ export function App() {
 
     if (savedToken) {
       // Validate session with server database
-      fetch(apiUrl('/api/auth/me'), {
+      fetch('/api/auth/me', {
         headers: { 'Authorization': `Bearer ${savedToken}` }
       })
         .then(res => res.json())
@@ -223,7 +269,7 @@ export function App() {
             setIsAuthenticated(true);
 
             // Restore user's saved prescriptions from database
-            fetch(apiUrl(`/api/prescriptions/user/${restoredUser.id}`))
+            fetch(`/api/prescriptions/user/${restoredUser.id}`)
               .then(r => r.json())
               .then(rxData => {
                 if (rxData && rxData.success && Array.isArray(rxData.data) && rxData.data.length > 0) {
@@ -329,7 +375,7 @@ export function App() {
   useEffect(() => {
     if (currentUser?.id) {
       // Fetch user appointments
-      fetch(apiUrl(`/api/appointments/my?userId=${currentUser.id}&role=${currentUser.role || 'patient'}`))
+      fetch(`/api/appointments/my?userId=${currentUser.id}&role=${currentUser.role || 'patient'}`)
         .then(r => r.json())
         .then(data => {
           if (data && data.success && Array.isArray(data.data)) {
@@ -343,12 +389,12 @@ export function App() {
   // Book Appointment via Backend API
   const handleBookAppointment = async (apt) => {
     try {
-      const res = await fetch(apiUrl('/api/appointments/book'), {
+      const res = await fetch('/api/appointments/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patientId: currentUser.id || 'usr-1',
-          patientName: currentUser.name || 'Patient',
+          patientName: currentUser.name || 'Rahul',
           doctorId: apt.doctorId || 'doc-1',
           date: apt.date,
           time: apt.time
@@ -370,7 +416,7 @@ export function App() {
   const handleCancelAppointment = async (aptId) => {
     setAppointments(prev => prev.filter(a => a.id !== aptId));
     try {
-      await fetch(apiUrl(`/api/appointments/${aptId}/cancel`), { method: 'POST' });
+      await fetch(`/api/appointments/${aptId}/cancel`, { method: 'POST' });
     } catch (err) {
       console.warn('Cancel appointment error:', err);
     }
@@ -384,14 +430,21 @@ export function App() {
     const updatedUser = {
       ...currentUser,
       id: credentials.id || currentUser.id || 'usr-1',
-      name: credentials.name || 'Patient',
-      age: credentials.age || "",
-      gender: credentials.gender || "",
-      phone: credentials.phone || "",
+      name: credentials.name || currentUser.name || 'Rahul',
+      age: credentials.age || currentUser.age || 22,
+      gender: credentials.gender || currentUser.gender || "Male",
+      phone: credentials.phone || currentUser.phone || "9140427747",
       role: 'patient',
-      healthId: credentials.abhaId || credentials.healthId || "",
-      email: credentials.email || ""
+      healthId: credentials.abhaId || credentials.healthId || currentUser.healthId || "ABHA-7890-9357",
+      email: credentials.email || currentUser.email || "prescriptoplus@customersupport.com"
     };
+
+    try {
+      localStorage.setItem('prescripto_user', JSON.stringify(updatedUser));
+      if (!localStorage.getItem('prescripto_token')) {
+        localStorage.setItem('prescripto_token', `sess_${updatedUser.id}`);
+      }
+    } catch (e) {}
 
     setCurrentUser(updatedUser);
     setActiveTab('overview');
@@ -399,7 +452,7 @@ export function App() {
 
     // Fetch user's existing prescriptions from database
     if (updatedUser.id) {
-      fetch(apiUrl(`/api/prescriptions/user/${updatedUser.id}`))
+      fetch(`/api/prescriptions/user/${updatedUser.id}`)
         .then(r => r.json())
         .then(rxData => {
           if (rxData && rxData.success && Array.isArray(rxData.data) && rxData.data.length > 0) {
@@ -421,7 +474,7 @@ export function App() {
     try {
       const token = localStorage.getItem('prescripto_token');
       if (token) {
-        await fetch(apiUrl('/api/auth/logout'), {
+        await fetch('/api/auth/logout', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })
@@ -497,7 +550,7 @@ export function App() {
       // Persist the extracted prescription to user's database record
       try {
         const currentUserId = currentUser?.id || 'usr-1';
-        fetch(apiUrl('/api/prescriptions/save'), {
+        fetch('/api/prescriptions/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -557,7 +610,7 @@ export function App() {
     // Persist to user's record in server database
     try {
       const currentUserId = currentUser?.id || 'usr-1';
-      fetch(apiUrl('/api/prescriptions/save'), {
+      fetch('/api/prescriptions/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -763,7 +816,7 @@ export function App() {
                   <div className="p-2 border-b border-slate-500/20 text-xs">
                     <div className="font-bold">{currentUser.name}</div>
                     <div className="text-[11px] text-teal-400 font-mono">{currentUser.healthId}</div>
-                    <div className="text-[10px] text-slate-400 mt-1">{currentUser.phone}</div>
+                    <div className="text-[10px] text-slate-400 mt-1">{currentUser.phone || "9140427747"}</div>
                     <div className="text-[10px] text-slate-400 truncate">{currentUser.email}</div>
                   </div>
 
@@ -1426,7 +1479,7 @@ export function App() {
                 </span>
 
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/30">
-                  CDSCO Certified
+                  Data Privacy & Consent Protected
                 </span>
               </div>
             </div>
