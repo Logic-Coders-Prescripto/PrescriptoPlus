@@ -15,6 +15,7 @@ import {
   CalendarDays
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { DOCTOR_PORTRAITS } from '../data/doctorAvatars';
 
 const SEED_DOCTORS = [
   {
@@ -29,7 +30,7 @@ const SEED_DOCTORS = [
     fee: "₹800",
     availableSlots: ["10:30 AM", "12:00 PM", "04:30 PM", "06:00 PM"],
     regNo: "MCI-48291",
-    image: "/doctors/doc-1.jpg"
+    image: DOCTOR_PORTRAITS["doc-1"]
   },
   {
     id: "doc-2",
@@ -43,7 +44,7 @@ const SEED_DOCTORS = [
     fee: "₹750",
     availableSlots: ["09:30 AM", "11:00 AM", "03:00 PM", "05:30 PM"],
     regNo: "MCI-39102",
-    image: "/doctors/doc-2.jpg"
+    image: DOCTOR_PORTRAITS["doc-2"]
   },
   {
     id: "doc-3",
@@ -57,7 +58,7 @@ const SEED_DOCTORS = [
     fee: "₹1,000",
     availableSlots: ["11:30 AM", "02:00 PM", "04:00 PM"],
     regNo: "MCI-52019",
-    image: "/doctors/doc-3.jpg"
+    image: DOCTOR_PORTRAITS["doc-3"]
   },
   {
     id: "doc-4",
@@ -71,30 +72,21 @@ const SEED_DOCTORS = [
     fee: "₹900",
     availableSlots: ["10:00 AM", "01:30 PM", "05:00 PM"],
     regNo: "MCI-61042",
-    image: "/doctors/doc-4.jpg"
+    image: DOCTOR_PORTRAITS["doc-4"]
   }
 ];
 
 function DoctorAvatar({ doc }) {
-  const [hasError, setHasError] = useState(false);
-  const initials = doc.name.replace('Dr. ', '').split(' ').map(n => n[0]).join('').slice(0, 2);
-
-  if (hasError) {
-    return (
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-700 to-emerald-800 text-white flex flex-col items-center justify-center font-black border border-teal-500/40 shadow-xs shrink-0">
-        <Stethoscope className="w-4 h-4 text-emerald-300 mb-0.5" />
-        <span className="text-xs tracking-wider">{initials}</span>
-      </div>
-    );
-  }
+  const photoSrc = DOCTOR_PORTRAITS[doc.id] || doc.image;
 
   return (
-    <img 
-      src={doc.image} 
-      alt={doc.name}
-      onError={() => setHasError(true)}
-      className="w-16 h-16 rounded-2xl object-cover border border-teal-600/30 dark:border-teal-700/50 shrink-0 bg-teal-950/40 shadow-xs" 
-    />
+    <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-teal-500/50 dark:border-teal-400/60 shadow-md bg-teal-950 shrink-0">
+      <img 
+        src={photoSrc} 
+        alt={doc.name}
+        className="w-full h-full object-cover" 
+      />
+    </div>
   );
 }
 
