@@ -82,7 +82,6 @@ One workflow turns a paper slip into a verified care plan:
 ## ✨ Key Features
 
 - **AI Prescription OCR** — Upload or snap a photo of a handwritten/printed prescription; Tesseract.js extracts the text.
-- **Doctor-in-the-Loop Verification** — Doctors review AI-extracted medicines/dosages, correct errors, and digitally sign before anything reaches the patient.
 - **Doctor Directory & Appointments** — Browse doctors by specialty, pick a slot, and book a consultation.
 - **Voice Routine Explainer** — Web Speech API narrates the confirmed schedule in Hindi and English.
 - **Jan Aushadhi (PMBJP) Savings Engine** — Compares branded vs. generic medicine costs and locates nearby Jan Aushadhi Kendras.
