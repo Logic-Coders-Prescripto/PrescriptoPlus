@@ -196,7 +196,7 @@ Built for **IEEE Hack Synapse 2026** — a 36-hour offline hackathon organized b
 ---
 
 <div align="center">
-Made with ❤️ by Team Logiccoders
+Made with ❤️ by Team Logic Coders
 </div>
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20&height=120&section=footer"/>
