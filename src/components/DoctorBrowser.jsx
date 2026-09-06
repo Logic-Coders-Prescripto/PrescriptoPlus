@@ -29,7 +29,7 @@ const SEED_DOCTORS = [
     fee: "₹800",
     availableSlots: ["10:30 AM", "12:00 PM", "04:30 PM", "06:00 PM"],
     regNo: "MCI-48291",
-    image: "/doctors/doc-1.svg"
+    image: "/doctors/doc-1.jpg"
   },
   {
     id: "doc-2",
@@ -43,7 +43,7 @@ const SEED_DOCTORS = [
     fee: "₹750",
     availableSlots: ["09:30 AM", "11:00 AM", "03:00 PM", "05:30 PM"],
     regNo: "MCI-39102",
-    image: "/doctors/doc-2.svg"
+    image: "/doctors/doc-2.jpg"
   },
   {
     id: "doc-3",
@@ -57,7 +57,7 @@ const SEED_DOCTORS = [
     fee: "₹1,000",
     availableSlots: ["11:30 AM", "02:00 PM", "04:00 PM"],
     regNo: "MCI-52019",
-    image: "/doctors/doc-3.svg"
+    image: "/doctors/doc-3.jpg"
   },
   {
     id: "doc-4",
@@ -71,7 +71,7 @@ const SEED_DOCTORS = [
     fee: "₹900",
     availableSlots: ["10:00 AM", "01:30 PM", "05:00 PM"],
     regNo: "MCI-61042",
-    image: "/doctors/doc-4.svg"
+    image: "/doctors/doc-4.jpg"
   }
 ];
 
